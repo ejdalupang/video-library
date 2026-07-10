@@ -22,6 +22,14 @@ function detectPlatform(url) {
   return null;
 }
 
+// ---------- Date formatting ----------
+function formatDate(entry) {
+  let date = null;
+  if (entry.createdAt && typeof entry.createdAt.toDate === "function") date = entry.createdAt.toDate();
+  else if (typeof entry.createdAt === "number") date = new Date(entry.createdAt);
+  return date ? date.toLocaleDateString("en-US") : "";
+}
+
 // ---------- Storage layer ----------
 // Falls back to a local-only store (this browser only) until firebase-config.js
 // is filled in with a real project, so the app is usable immediately.
@@ -238,49 +246,55 @@ function render() {
     const card = document.createElement("div");
     card.className = "card";
     const tags = entry.tags || [];
+    const dateStr = formatDate(entry);
     card.innerHTML = `
-      <div class="card-head">
+      <div class="embed-wrap">
         <span class="platform-badge ${entry.platform}">${entry.platform === "instagram" ? "Instagram" : "TikTok"}</span>
-        <span class="card-category">${entry.category || ""}</span>
+        <div class="embed-content">${buildThumbHtml(entry)}</div>
       </div>
-      ${tags.length ? `<div class="card-tags">${tags.map((t) => `<span class="tag">#${t}</span>`).join("")}</div>` : ""}
-      ${entry.note ? `<div class="card-note">${entry.note}</div>` : ""}
-      <div class="edit-form" hidden>
-        <input class="edit-category" type="text" placeholder="Category" list="categoryList">
-        <input class="edit-tags" type="text" placeholder="Tags, comma separated" list="tagList">
-        <div class="edit-actions">
-          <button class="save-btn">Save</button>
-          <button class="cancel-btn">Cancel</button>
+      <div class="card-body">
+        <div class="pill-row">
+          <span class="pill category-pill">${entry.category || ""}</span>
         </div>
-      </div>
-      <div class="embed-wrap">${buildThumbHtml(entry)}</div>
-      <div class="card-actions">
-        <button class="hide-btn">▶ Play here</button>
-        <button class="edit-btn" title="Edit category/tags">✏️</button>
-        <button class="delete-btn" title="Delete">🗑</button>
+        ${tags.length ? `<div class="pill-row tag-row">${tags.map((t) => `<span class="pill tag-pill">${t}</span>`).join("")}</div>` : ""}
+        ${entry.note ? `<p class="card-note">${entry.note}</p>` : ""}
+        ${dateStr ? `<div class="card-date">${dateStr}</div>` : ""}
+        <div class="edit-form" hidden>
+          <input class="edit-category" type="text" placeholder="Category" list="categoryList">
+          <input class="edit-tags" type="text" placeholder="Tags, comma separated" list="tagList">
+          <div class="edit-actions">
+            <button class="save-btn">Save</button>
+            <button class="cancel-btn">Cancel</button>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="hide-btn">▶ Play here</button>
+          <button class="edit-btn" title="Edit category/tags">✏️</button>
+          <button class="delete-btn" title="Delete">🗑</button>
+        </div>
       </div>
     `;
 
-    const embedWrap = card.querySelector(".embed-wrap");
+    const embedContent = card.querySelector(".embed-content");
     const hideBtn = card.querySelector(".hide-btn");
     let expanded = false;
     const showEmbed = () => {
-      embedWrap.innerHTML = buildEmbedHtml(entry);
+      embedContent.innerHTML = buildEmbedHtml(entry);
       expanded = true;
       hideBtn.textContent = "◀ Back to preview";
       reprocessEmbeds();
     };
     const showThumb = () => {
-      embedWrap.innerHTML = buildThumbHtml(entry);
+      embedContent.innerHTML = buildThumbHtml(entry);
       expanded = false;
       hideBtn.textContent = "▶ Play here";
-      loadThumbnail(embedWrap, entry);
+      loadThumbnail(embedContent, entry);
     };
     hideBtn.addEventListener("click", () => (expanded ? showThumb() : showEmbed()));
-    embedWrap.addEventListener("click", () => {
+    embedContent.addEventListener("click", () => {
       if (!expanded) showEmbed();
     });
-    loadThumbnail(embedWrap, entry);
+    loadThumbnail(embedContent, entry);
 
     const editForm = card.querySelector(".edit-form");
     const editCategoryInput = card.querySelector(".edit-category");
