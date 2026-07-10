@@ -275,12 +275,9 @@ body {
   justify-content: center;
 }
 
-.thumb-preview.instagram {
-  background: linear-gradient(135deg, #feda75, #d62976, #962fbf, #4f5bd5);
-}
-
+.thumb-preview.instagram,
 .thumb-preview.tiktok {
-  background-color: #111;
+  background-color: #1c1c1e;
 }
 
 .thumb-preview .play-overlay {
