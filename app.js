@@ -190,15 +190,27 @@ async function fetchInstagramThumbnail(url) {
   return match ? match[1] : null;
 }
 
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function fetchThumbnail(entry) {
   // Once fetched successfully, the URL is saved on the entry itself (see loadThumbnail)
   // so future loads never depend on the flaky scrape succeeding again.
   if (entry.thumbnailUrl) return entry.thumbnailUrl;
   if (thumbCache.has(entry.url)) return thumbCache.get(entry.url);
+
+  const attempt = () =>
+    entry.platform === "tiktok" ? fetchTikTokThumbnail(entry.url) : fetchInstagramThumbnail(entry.url);
+
   let thumb = null;
-  try {
-    thumb = entry.platform === "tiktok" ? await fetchTikTokThumbnail(entry.url) : await fetchInstagramThumbnail(entry.url);
-  } catch (e) {}
+  for (const delay of [0, 1500, 3000]) {
+    if (delay) await wait(delay);
+    try {
+      thumb = await attempt();
+    } catch (e) {}
+    if (thumb) break;
+  }
   thumbCache.set(entry.url, thumb);
   return thumb;
 }
