@@ -157,25 +157,25 @@ function render() {
         <span class="card-category">${entry.category || ""}</span>
       </div>
       ${entry.note ? `<div class="card-note">${entry.note}</div>` : ""}
-      <div class="embed-wrap" hidden></div>
+      <div class="embed-wrap">${buildEmbedHtml(entry)}</div>
       <div class="card-actions">
-        <button class="play-btn">▶ Play here</button>
+        <button class="hide-btn">▲ Hide preview</button>
         <button class="delete-btn" title="Delete">🗑</button>
       </div>
     `;
 
     const embedWrap = card.querySelector(".embed-wrap");
-    const playBtn = card.querySelector(".play-btn");
-    playBtn.addEventListener("click", () => {
+    const hideBtn = card.querySelector(".hide-btn");
+    hideBtn.addEventListener("click", () => {
       if (embedWrap.hidden) {
         embedWrap.innerHTML = buildEmbedHtml(entry);
         embedWrap.hidden = false;
-        playBtn.textContent = "▲ Hide";
+        hideBtn.textContent = "▲ Hide preview";
         reprocessEmbeds();
       } else {
         embedWrap.hidden = true;
         embedWrap.innerHTML = "";
-        playBtn.textContent = "▶ Play here";
+        hideBtn.textContent = "▶ Show preview";
       }
     });
 
@@ -185,6 +185,8 @@ function render() {
 
     cardGrid.appendChild(card);
   });
+
+  reprocessEmbeds();
 }
 
 store.subscribe((items) => {
