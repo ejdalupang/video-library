@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Video Library</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <h1>🎬 Video Library</h1>
+  <button id="themeToggle" class="icon-btn" title="Toggle dark mode">🌙</button>
+</header>
+
+<section class="add-form">
+  <input id="urlInput" type="url" placeholder="Paste Instagram or TikTok link…" autocomplete="off">
+  <input id="categoryInput" type="text" placeholder="Category (e.g. Recipes, Travel)" list="categoryList" autocomplete="off">
+  <datalist id="categoryList"></datalist>
+  <input id="noteInput" type="text" placeholder="Note (optional)" autocomplete="off">
+  <button id="addBtn">+ Add</button>
+</section>
+<p id="formError" class="form-error" hidden></p>
+
+<nav id="categoryFilters" class="category-filters"></nav>
+
+<main id="cardGrid" class="card-grid"></main>
+
+<p id="emptyState" class="empty-state" hidden>No videos saved yet — paste a link above to get started.</p>
+
+<!-- Instagram + TikTok embed scripts, loaded once and re-processed as needed -->
+<script async src="https://www.instagram.com/embed.js"></script>
+<script async src="https://www.tiktok.com/embed.js"></script>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
