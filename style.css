@@ -262,6 +262,40 @@ body {
   max-width: 100%;
 }
 
+.thumb-preview {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  border-radius: 10px;
+  background-size: cover;
+  background-position: center;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.thumb-preview.instagram {
+  background: linear-gradient(135deg, #feda75, #d62976, #962fbf, #4f5bd5);
+}
+
+.thumb-preview.tiktok {
+  background-color: #111;
+}
+
+.thumb-preview .play-overlay {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  padding-left: 4px;
+}
+
 .empty-state {
   text-align: center;
   color: var(--muted);

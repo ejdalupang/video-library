@@ -170,6 +170,37 @@ function buildEmbedHtml(entry) {
   return `<blockquote class="tiktok-embed" cite="${entry.url}" style="margin:0;width:100%;"><section></section></blockquote>`;
 }
 
+// ---------- Thumbnail previews ----------
+// TikTok has a free, no-auth oEmbed endpoint that returns a real thumbnail image.
+// Instagram's oEmbed now requires a Meta developer access token, so there's no
+// free way to fetch a bare thumbnail for it — it gets a plain placeholder instead.
+const tiktokThumbCache = new Map();
+
+async function fetchTikTokThumbnail(url) {
+  if (tiktokThumbCache.has(url)) return tiktokThumbCache.get(url);
+  try {
+    const res = await fetch(`https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`);
+    const data = await res.json();
+    tiktokThumbCache.set(url, data.thumbnail_url || null);
+    return data.thumbnail_url || null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function buildThumbHtml(entry) {
+  return `<div class="thumb-preview ${entry.platform}"><div class="play-overlay">▶</div></div>`;
+}
+
+function loadThumbnail(container, entry) {
+  if (entry.platform !== "tiktok") return;
+  fetchTikTokThumbnail(entry.url).then((url) => {
+    if (!url) return;
+    const thumb = container.querySelector(".thumb-preview");
+    if (thumb) thumb.style.backgroundImage = `url("${url}")`;
+  });
+}
+
 function reprocessEmbeds() {
   if (window.instgrm) window.instgrm.Embeds.process();
   // TikTok's embed.js scans the DOM for unprocessed blockquotes when re-run.
@@ -211,9 +242,9 @@ function render() {
           <button class="cancel-btn">Cancel</button>
         </div>
       </div>
-      <div class="embed-wrap">${buildEmbedHtml(entry)}</div>
+      <div class="embed-wrap">${buildThumbHtml(entry)}</div>
       <div class="card-actions">
-        <button class="hide-btn">▲ Hide preview</button>
+        <button class="hide-btn">▶ Play here</button>
         <button class="edit-btn" title="Edit category/tags">✏️</button>
         <button class="delete-btn" title="Delete">🗑</button>
       </div>
@@ -221,18 +252,24 @@ function render() {
 
     const embedWrap = card.querySelector(".embed-wrap");
     const hideBtn = card.querySelector(".hide-btn");
-    hideBtn.addEventListener("click", () => {
-      if (embedWrap.hidden) {
-        embedWrap.innerHTML = buildEmbedHtml(entry);
-        embedWrap.hidden = false;
-        hideBtn.textContent = "▲ Hide preview";
-        reprocessEmbeds();
-      } else {
-        embedWrap.hidden = true;
-        embedWrap.innerHTML = "";
-        hideBtn.textContent = "▶ Show preview";
-      }
+    let expanded = false;
+    const showEmbed = () => {
+      embedWrap.innerHTML = buildEmbedHtml(entry);
+      expanded = true;
+      hideBtn.textContent = "◀ Back to preview";
+      reprocessEmbeds();
+    };
+    const showThumb = () => {
+      embedWrap.innerHTML = buildThumbHtml(entry);
+      expanded = false;
+      hideBtn.textContent = "▶ Play here";
+      loadThumbnail(embedWrap, entry);
+    };
+    hideBtn.addEventListener("click", () => (expanded ? showThumb() : showEmbed()));
+    embedWrap.addEventListener("click", () => {
+      if (!expanded) showEmbed();
     });
+    loadThumbnail(embedWrap, entry);
 
     const editForm = card.querySelector(".edit-form");
     const editCategoryInput = card.querySelector(".edit-category");
@@ -259,8 +296,6 @@ function render() {
 
     cardGrid.appendChild(card);
   });
-
-  reprocessEmbeds();
 }
 
 store.subscribe((items) => {
