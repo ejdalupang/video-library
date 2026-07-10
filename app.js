@@ -47,6 +47,9 @@ if (isFirebaseConfigured) {
     add(entry) {
       return db.collection("videos").add({ ...entry, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
     },
+    update(id, fields) {
+      return db.collection("videos").doc(id).update(fields);
+    },
     remove(id) {
       return db.collection("videos").doc(id).delete();
     },
@@ -66,6 +69,11 @@ if (isFirebaseConfigured) {
     add(entry) {
       const items = readLocal();
       items.unshift({ id: String(Date.now()), ...entry, createdAt: Date.now() });
+      writeLocal(items);
+      onChange_(items);
+    },
+    update(id, fields) {
+      const items = readLocal().map((i) => (i.id === id ? { ...i, ...fields } : i));
       writeLocal(items);
       onChange_(items);
     },
@@ -93,12 +101,19 @@ if (!isFirebaseConfigured) {
 // ---------- State ----------
 let allEntries = [];
 let activeCategory = "All";
+let activeTag = "All";
+
+function parseTags(text) {
+  return text.split(",").map((t) => t.trim()).filter(Boolean);
+}
 
 // ---------- Render ----------
 const cardGrid = document.getElementById("cardGrid");
 const categoryFilters = document.getElementById("categoryFilters");
+const tagFilters = document.getElementById("tagFilters");
 const emptyState = document.getElementById("emptyState");
 const categoryList = document.getElementById("categoryList");
+const tagList = document.getElementById("tagList");
 
 function renderCategoryFilters() {
   const categories = ["All", ...new Set(allEntries.map((e) => e.category).filter(Boolean))];
@@ -119,6 +134,32 @@ function renderCategoryFilters() {
     const opt = document.createElement("option");
     opt.value = cat;
     categoryList.appendChild(opt);
+  });
+}
+
+function renderTagFilters() {
+  const allTags = new Set();
+  allEntries.forEach((e) => (e.tags || []).forEach((t) => allTags.add(t)));
+
+  tagFilters.innerHTML = "";
+  if (allTags.size > 0) {
+    ["All", ...allTags].forEach((tag) => {
+      const chip = document.createElement("button");
+      chip.className = "chip tag-chip" + (tag === activeTag ? " active" : "");
+      chip.textContent = tag === "All" ? "All tags" : `#${tag}`;
+      chip.addEventListener("click", () => {
+        activeTag = tag;
+        render();
+      });
+      tagFilters.appendChild(chip);
+    });
+  }
+
+  tagList.innerHTML = "";
+  [...allTags].forEach((tag) => {
+    const opt = document.createElement("option");
+    opt.value = tag;
+    tagList.appendChild(opt);
   });
 }
 
@@ -143,7 +184,10 @@ function reprocessEmbeds() {
 
 function render() {
   renderCategoryFilters();
-  const filtered = activeCategory === "All" ? allEntries : allEntries.filter((e) => e.category === activeCategory);
+  renderTagFilters();
+
+  let filtered = activeCategory === "All" ? allEntries : allEntries.filter((e) => e.category === activeCategory);
+  if (activeTag !== "All") filtered = filtered.filter((e) => (e.tags || []).includes(activeTag));
 
   cardGrid.innerHTML = "";
   emptyState.hidden = allEntries.length > 0;
@@ -151,15 +195,26 @@ function render() {
   filtered.forEach((entry) => {
     const card = document.createElement("div");
     card.className = "card";
+    const tags = entry.tags || [];
     card.innerHTML = `
       <div class="card-head">
         <span class="platform-badge ${entry.platform}">${entry.platform === "instagram" ? "Instagram" : "TikTok"}</span>
         <span class="card-category">${entry.category || ""}</span>
       </div>
+      ${tags.length ? `<div class="card-tags">${tags.map((t) => `<span class="tag">#${t}</span>`).join("")}</div>` : ""}
       ${entry.note ? `<div class="card-note">${entry.note}</div>` : ""}
+      <div class="edit-form" hidden>
+        <input class="edit-category" type="text" placeholder="Category" list="categoryList">
+        <input class="edit-tags" type="text" placeholder="Tags, comma separated" list="tagList">
+        <div class="edit-actions">
+          <button class="save-btn">Save</button>
+          <button class="cancel-btn">Cancel</button>
+        </div>
+      </div>
       <div class="embed-wrap">${buildEmbedHtml(entry)}</div>
       <div class="card-actions">
         <button class="hide-btn">▲ Hide preview</button>
+        <button class="edit-btn" title="Edit category/tags">✏️</button>
         <button class="delete-btn" title="Delete">🗑</button>
       </div>
     `;
@@ -177,6 +232,25 @@ function render() {
         embedWrap.innerHTML = "";
         hideBtn.textContent = "▶ Show preview";
       }
+    });
+
+    const editForm = card.querySelector(".edit-form");
+    const editCategoryInput = card.querySelector(".edit-category");
+    const editTagsInput = card.querySelector(".edit-tags");
+    card.querySelector(".edit-btn").addEventListener("click", () => {
+      editCategoryInput.value = entry.category || "";
+      editTagsInput.value = tags.join(", ");
+      editForm.hidden = false;
+    });
+    card.querySelector(".cancel-btn").addEventListener("click", () => {
+      editForm.hidden = true;
+    });
+    card.querySelector(".save-btn").addEventListener("click", () => {
+      store.update(entry.id, {
+        category: editCategoryInput.value.trim() || "Uncategorized",
+        tags: parseTags(editTagsInput.value),
+      });
+      editForm.hidden = true;
     });
 
     card.querySelector(".delete-btn").addEventListener("click", () => {
@@ -197,6 +271,7 @@ store.subscribe((items) => {
 // ---------- Add form ----------
 const urlInput = document.getElementById("urlInput");
 const categoryInput = document.getElementById("categoryInput");
+const tagsInput = document.getElementById("tagsInput");
 const noteInput = document.getElementById("noteInput");
 const addBtn = document.getElementById("addBtn");
 const formError = document.getElementById("formError");
@@ -204,6 +279,7 @@ const formError = document.getElementById("formError");
 addBtn.addEventListener("click", () => {
   const url = urlInput.value.trim();
   const category = categoryInput.value.trim() || "Uncategorized";
+  const tags = parseTags(tagsInput.value);
   const note = noteInput.value.trim();
   const platform = detectPlatform(url);
 
@@ -214,8 +290,9 @@ addBtn.addEventListener("click", () => {
   }
   formError.hidden = true;
 
-  store.add({ url, category, note, platform });
+  store.add({ url, category, tags, note, platform });
   urlInput.value = "";
+  tagsInput.value = "";
   noteInput.value = "";
 });
 

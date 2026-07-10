@@ -17,12 +17,15 @@
   <input id="urlInput" type="url" placeholder="Paste Instagram or TikTok link…" autocomplete="off">
   <input id="categoryInput" type="text" placeholder="Category (e.g. Recipes, Travel)" list="categoryList" autocomplete="off">
   <datalist id="categoryList"></datalist>
+  <input id="tagsInput" type="text" placeholder="Tags, comma separated (e.g. mango, dessert)" list="tagList" autocomplete="off">
+  <datalist id="tagList"></datalist>
   <input id="noteInput" type="text" placeholder="Note (optional)" autocomplete="off">
   <button id="addBtn">+ Add</button>
 </section>
 <p id="formError" class="form-error" hidden></p>
 
 <nav id="categoryFilters" class="category-filters"></nav>
+<nav id="tagFilters" class="category-filters tag-filters"></nav>
 
 <main id="cardGrid" class="card-grid"></main>
 

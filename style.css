@@ -118,6 +118,15 @@ body {
   border-color: var(--accent);
 }
 
+.tag-filters {
+  margin-top: -10px;
+}
+
+.tag-filters .chip {
+  font-size: 0.8rem;
+  opacity: 0.85;
+}
+
 .card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -159,6 +168,64 @@ body {
 .card-note {
   font-size: 0.9rem;
   margin: 6px 0;
+}
+
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 2px 0 6px;
+}
+
+.card-tags .tag {
+  font-size: 0.75rem;
+  color: var(--accent);
+}
+
+.edit-form {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+}
+
+.edit-form[hidden] {
+  display: none;
+}
+
+.edit-form input {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.edit-actions button {
+  flex: 1;
+  padding: 6px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.edit-actions .save-btn {
+  background: var(--accent);
+  color: var(--accent-text);
+  border-color: var(--accent);
+  font-weight: 600;
 }
 
 .card-actions {
