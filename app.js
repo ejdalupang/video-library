@@ -191,6 +191,9 @@ async function fetchInstagramThumbnail(url) {
 }
 
 async function fetchThumbnail(entry) {
+  // Once fetched successfully, the URL is saved on the entry itself (see loadThumbnail)
+  // so future loads never depend on the flaky scrape succeeding again.
+  if (entry.thumbnailUrl) return entry.thumbnailUrl;
   if (thumbCache.has(entry.url)) return thumbCache.get(entry.url);
   let thumb = null;
   try {
@@ -209,6 +212,7 @@ function loadThumbnail(container, entry) {
     if (!url) return;
     const thumb = container.querySelector(".thumb-preview");
     if (thumb) thumb.style.backgroundImage = `url("${url}")`;
+    if (!entry.thumbnailUrl) store.update(entry.id, { thumbnailUrl: url });
   });
 }
 
