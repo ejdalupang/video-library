@@ -172,20 +172,32 @@ function buildEmbedHtml(entry) {
 
 // ---------- Thumbnail previews ----------
 // TikTok has a free, no-auth oEmbed endpoint that returns a real thumbnail image.
-// Instagram's oEmbed now requires a Meta developer access token, so there's no
-// free way to fetch a bare thumbnail for it — it gets a plain placeholder instead.
-const tiktokThumbCache = new Map();
+// Instagram's oEmbed now requires a Meta developer access token, so instead we
+// read the post's own cover image out of r.jina.ai's text rendering of the public
+// page (falls back to a gradient placeholder if that ever fails).
+const thumbCache = new Map();
 
 async function fetchTikTokThumbnail(url) {
-  if (tiktokThumbCache.has(url)) return tiktokThumbCache.get(url);
+  const res = await fetch(`https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`);
+  const data = await res.json();
+  return data.thumbnail_url || null;
+}
+
+async function fetchInstagramThumbnail(url) {
+  const res = await fetch(`https://r.jina.ai/${url}`);
+  const text = await res.text();
+  const match = text.match(/!\[Image \d+: (?:Video|Photo) by[^\]]*\]\((https:\/\/[^)]+)\)/);
+  return match ? match[1] : null;
+}
+
+async function fetchThumbnail(entry) {
+  if (thumbCache.has(entry.url)) return thumbCache.get(entry.url);
+  let thumb = null;
   try {
-    const res = await fetch(`https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`);
-    const data = await res.json();
-    tiktokThumbCache.set(url, data.thumbnail_url || null);
-    return data.thumbnail_url || null;
-  } catch (e) {
-    return null;
-  }
+    thumb = entry.platform === "tiktok" ? await fetchTikTokThumbnail(entry.url) : await fetchInstagramThumbnail(entry.url);
+  } catch (e) {}
+  thumbCache.set(entry.url, thumb);
+  return thumb;
 }
 
 function buildThumbHtml(entry) {
@@ -193,8 +205,7 @@ function buildThumbHtml(entry) {
 }
 
 function loadThumbnail(container, entry) {
-  if (entry.platform !== "tiktok") return;
-  fetchTikTokThumbnail(entry.url).then((url) => {
+  fetchThumbnail(entry).then((url) => {
     if (!url) return;
     const thumb = container.querySelector(".thumb-preview");
     if (thumb) thumb.style.backgroundImage = `url("${url}")`;
