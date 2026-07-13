@@ -172,9 +172,11 @@ function buildEmbedHtml(entry) {
 
 // ---------- Thumbnail previews ----------
 // TikTok has a free, no-auth oEmbed endpoint that returns a real thumbnail image.
-// Instagram's oEmbed now requires a Meta developer access token, so instead we
-// read the post's own cover image out of r.jina.ai's text rendering of the public
-// page (falls back to a gradient placeholder if that ever fails).
+// Instagram has no equivalent free/official API — scraping its page for a cover
+// image was tried, but Instagram's anonymous view sometimes serves an unrelated
+// suggested reel instead of the requested one, producing confidently-wrong
+// thumbnails. That's worse than no thumbnail, so Instagram cards always use the
+// plain placeholder; "Play here" (the official embed widget) is always correct.
 const thumbCache = new Map();
 
 async function fetchTikTokThumbnail(url) {
@@ -183,34 +185,14 @@ async function fetchTikTokThumbnail(url) {
   return data.thumbnail_url || null;
 }
 
-async function fetchInstagramThumbnail(url) {
-  const res = await fetch(`https://r.jina.ai/${url}`);
-  const text = await res.text();
-  const match = text.match(/!\[Image \d+: (?:Video|Photo) by[^\]]*\]\((https:\/\/[^)]+)\)/);
-  return match ? match[1] : null;
-}
-
-function wait(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 async function fetchThumbnail(entry) {
-  // Once fetched successfully, the URL is saved on the entry itself (see loadThumbnail)
-  // so future loads never depend on the flaky scrape succeeding again.
+  if (entry.platform !== "tiktok") return null;
   if (entry.thumbnailUrl) return entry.thumbnailUrl;
   if (thumbCache.has(entry.url)) return thumbCache.get(entry.url);
-
-  const attempt = () =>
-    entry.platform === "tiktok" ? fetchTikTokThumbnail(entry.url) : fetchInstagramThumbnail(entry.url);
-
   let thumb = null;
-  for (const delay of [0, 1500, 3000]) {
-    if (delay) await wait(delay);
-    try {
-      thumb = await attempt();
-    } catch (e) {}
-    if (thumb) break;
-  }
+  try {
+    thumb = await fetchTikTokThumbnail(entry.url);
+  } catch (e) {}
   thumbCache.set(entry.url, thumb);
   return thumb;
 }
