@@ -251,9 +251,9 @@ function render() {
           <button class="cancel-btn">Cancel</button>
         </div>
       </div>
-      <div class="embed-wrap">${buildThumbHtml(entry)}</div>
+      <div class="embed-wrap">${buildEmbedHtml(entry)}</div>
       <div class="card-actions">
-        <button class="hide-btn">▶ Play here</button>
+        <button class="hide-btn">▲ Hide preview</button>
         <button class="edit-btn" title="Edit category/tags">✏️</button>
         <button class="delete-btn" title="Delete">🗑</button>
       </div>
@@ -261,24 +261,23 @@ function render() {
 
     const embedWrap = card.querySelector(".embed-wrap");
     const hideBtn = card.querySelector(".hide-btn");
-    let expanded = false;
+    let expanded = true;
     const showEmbed = () => {
       embedWrap.innerHTML = buildEmbedHtml(entry);
       expanded = true;
-      hideBtn.textContent = "◀ Back to preview";
+      hideBtn.textContent = "▲ Hide preview";
       reprocessEmbeds();
     };
     const showThumb = () => {
       embedWrap.innerHTML = buildThumbHtml(entry);
       expanded = false;
-      hideBtn.textContent = "▶ Play here";
+      hideBtn.textContent = "▶ Show preview";
       loadThumbnail(embedWrap, entry);
     };
     hideBtn.addEventListener("click", () => (expanded ? showThumb() : showEmbed()));
     embedWrap.addEventListener("click", () => {
       if (!expanded) showEmbed();
     });
-    loadThumbnail(embedWrap, entry);
 
     const editForm = card.querySelector(".edit-form");
     const editCategoryInput = card.querySelector(".edit-category");
@@ -305,6 +304,8 @@ function render() {
 
     cardGrid.appendChild(card);
   });
+
+  reprocessEmbeds();
 }
 
 store.subscribe((items) => {
