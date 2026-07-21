@@ -22,6 +22,14 @@ function detectPlatform(url) {
   return null;
 }
 
+// Instagram's Reels-tab share links use /reels/{id}/ (plural), which Instagram
+// blocks for logged-out viewers — the identical post is public at the classic
+// /reel/{id}/ (singular) permalink, so normalize before ever saving a URL.
+function normalizeUrl(url, platform) {
+  if (platform === "instagram") return url.replace("/reels/", "/reel/");
+  return url;
+}
+
 // ---------- Storage layer ----------
 // Falls back to a local-only store (this browser only) until firebase-config.js
 // is filled in with a real project, so the app is usable immediately.
@@ -286,6 +294,17 @@ function render() {
       if (!expanded) showEmbed();
     });
 
+    // With many embeds loading at once, Instagram's widget occasionally never
+    // sends the resize signal for one, leaving its iframe stuck at ~2px tall.
+    // Loading dozens of embeds concurrently is naturally slow, so wait well
+    // past normal load time before treating one as actually stuck.
+    setTimeout(() => {
+      if (!expanded) return;
+      const iframe = embedWrap.querySelector("iframe");
+      const height = iframe && parseInt(getComputedStyle(iframe).height, 10);
+      if (iframe && height < 50) showEmbed();
+    }, 20000);
+
     const editForm = card.querySelector(".edit-form");
     const editCategoryInput = card.querySelector(".edit-category");
     const editTagsInput = card.querySelector(".edit-tags");
@@ -329,11 +348,11 @@ const addBtn = document.getElementById("addBtn");
 const formError = document.getElementById("formError");
 
 addBtn.addEventListener("click", () => {
-  const url = urlInput.value.trim();
+  const rawUrl = urlInput.value.trim();
   const category = categoryInput.value.trim() || "Uncategorized";
   const tags = parseTags(tagsInput.value);
   const note = noteInput.value.trim();
-  const platform = detectPlatform(url);
+  const platform = detectPlatform(rawUrl);
 
   if (!platform) {
     formError.textContent = "Please paste a valid Instagram or TikTok link.";
@@ -342,6 +361,7 @@ addBtn.addEventListener("click", () => {
   }
   formError.hidden = true;
 
+  const url = normalizeUrl(rawUrl, platform);
   store.add({ url, category, tags, note, platform });
   urlInput.value = "";
   tagsInput.value = "";
