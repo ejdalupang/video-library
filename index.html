@@ -31,14 +31,17 @@
 
 <p id="emptyState" class="empty-state" hidden>No videos saved yet — paste a link above to get started.</p>
 
-<!-- Instagram + TikTok embed scripts, loaded once and re-processed as needed -->
-<script async src="https://www.instagram.com/embed.js"></script>
-<script async src="https://www.tiktok.com/embed.js"></script>
+<!-- Instagram + TikTok embed scripts. Loaded async, so they can finish loading
+     either before or after cards get rendered — reprocessEmbeds() is called both
+     after every render() and again here once each script actually finishes
+     loading, so a slow-loading script can't leave a card permanently blank. -->
+<script async src="https://www.instagram.com/embed.js" onload="window.reprocessEmbeds && window.reprocessEmbeds()"></script>
+<script async src="https://www.tiktok.com/embed.js" onload="window.reprocessEmbeds && window.reprocessEmbeds()"></script>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="app.js?v=1"></script>
+<script src="app.js?v=2"></script>
 </body>
 </html>

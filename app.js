@@ -164,10 +164,17 @@ function renderTagFilters() {
 }
 
 function buildEmbedHtml(entry) {
+  // The <a> fallback link only stays visible if the embed script fails to
+  // convert the blockquote into a real player — otherwise it gets replaced.
+  const safeUrl = entry.url.replace(/"/g, "&quot;");
   if (entry.platform === "instagram") {
-    return `<blockquote class="instagram-media" data-instgrm-permalink="${entry.url}" style="margin:0;width:100%;"></blockquote>`;
+    return `<blockquote class="instagram-media" data-instgrm-permalink="${safeUrl}" style="margin:0;width:100%;">
+      <a href="${safeUrl}" target="_blank" rel="noopener">View this post on Instagram</a>
+    </blockquote>`;
   }
-  return `<blockquote class="tiktok-embed" cite="${entry.url}" style="margin:0;width:100%;"><section></section></blockquote>`;
+  return `<blockquote class="tiktok-embed" cite="${safeUrl}" style="margin:0;width:100%;">
+    <section><a href="${safeUrl}" target="_blank" rel="noopener">View this video on TikTok</a></section>
+  </blockquote>`;
 }
 
 // ---------- Thumbnail previews ----------
